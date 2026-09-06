@@ -19,7 +19,9 @@ export default async function handler(req, res) {
     // Gunakan model Flash yang tersedia untuk API key baru; nilainya bisa
     // dioverride dari Environment Variables bila diperlukan.
     const model = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+    const stream = req.query?.stream === '1';
+    const action = stream ? 'streamGenerateContent?alt=sse' : 'generateContent';
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:${action}`;
 
     const googleRes = await fetch(endpoint, {
       method: 'POST',
@@ -31,6 +33,18 @@ export default async function handler(req, res) {
         contents: [{ parts: [{ text: prompt }] }]
       })
     });
+
+    if (stream && googleRes.ok && googleRes.body) {
+      // Teruskan SSE apa adanya. Browser lama tetap bisa membaca responseText
+      // secara bertahap lewat XMLHttpRequest.
+      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      for await (const chunk of googleRes.body) {
+        res.write(chunk);
+      }
+      return res.end();
+    }
 
     const data = await googleRes.json().catch(() => ({}));
 
