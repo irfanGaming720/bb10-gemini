@@ -4,7 +4,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ reply: 'Method not allowed' });
   }
 
-  const { prompt } = req.body;
+  const { prompt } = req.body || {};
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -16,20 +16,29 @@ export default async function handler(req, res) {
   }
 
   try {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // gemini-1.5-flash sudah tidak lagi menjadi pilihan stabil. Gunakan model
+    // Flash yang masih didukung; bisa dioverride dari Environment Variables.
+    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
     const googleRes = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey
+      },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }]
       })
     });
 
-    const data = await googleRes.json();
+    const data = await googleRes.json().catch(() => ({}));
 
-    if (data.error) {
-      return res.status(500).json({ reply: 'Google API Error: ' + data.error.message });
+    if (!googleRes.ok || data.error) {
+      const message = data.error?.message || `Google API mengembalikan status ${googleRes.status}.`;
+      // Teruskan status yang bermakna agar kesalahan konfigurasi (401/403),
+      // kuota (429), atau model tidak ditemukan (404) tidak terlihat sebagai 500.
+      return res.status(googleRes.status || 502).json({ reply: `Google API Error: ${message}` });
     }
 
     const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Tidak ada respons dari model.';

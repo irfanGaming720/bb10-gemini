@@ -63,7 +63,12 @@
               box.innerHTML += '<div class="msg error"><b>System:</b> Format balasan rusak.</div>';
             }
           } else {
-            box.innerHTML += '<div class="msg error"><b>System:</b> Gagal koneksi (' + xhr.status + ').</div>';
+            var errorText = 'Gagal koneksi (' + xhr.status + ').';
+            try {
+              var errorData = JSON.parse(xhr.responseText);
+              if (errorData.reply) errorText = errorData.reply;
+            } catch (e) {}
+            box.innerHTML += '<div class="msg error"><b>System:</b> ' + escapeHtml(errorText) + '</div>';
           }
           box.scrollTop = box.scrollHeight;
         }
