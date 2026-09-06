@@ -16,9 +16,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    // gemini-1.5-flash sudah tidak lagi menjadi pilihan stabil. Gunakan model
-    // Flash yang masih didukung; bisa dioverride dari Environment Variables.
-    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    // Gunakan model Flash yang tersedia untuk API key baru; nilainya bisa
+    // dioverride dari Environment Variables bila diperlukan.
+    const model = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
     const googleRes = await fetch(endpoint, {
