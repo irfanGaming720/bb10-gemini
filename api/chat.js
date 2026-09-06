@@ -30,7 +30,12 @@ export default async function handler(req, res) {
         'x-goog-api-key': apiKey
       },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
+        contents: [{ parts: [{ text: prompt }] }],
+        // 3.6 Flash berpikir pada level medium secara default. Minimal
+        // mengutamakan respons pertama yang cepat untuk aplikasi chat ringan.
+        generationConfig: {
+          thinkingConfig: { thinkingLevel: 'minimal' }
+        }
       })
     });
 
@@ -40,8 +45,12 @@ export default async function handler(req, res) {
       res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.write(': stream mulai\n\n');
+      if (typeof res.flush === 'function') res.flush();
       for await (const chunk of googleRes.body) {
         res.write(chunk);
+        if (typeof res.flush === 'function') res.flush();
       }
       return res.end();
     }

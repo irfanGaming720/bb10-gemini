@@ -66,6 +66,9 @@
       var receivedLength = 0;
       var sseBuffer = '';
       var replyText = '';
+      var shownText = '';
+      var streamFinished = false;
+      var typingTimer = null;
       xhr.open('POST', '/api/chat?stream=1', true);
       xhr.setRequestHeader('Content-Type', 'application/json');
 
@@ -82,7 +85,8 @@
           if (xhr.status === 200) {
             readStream(xhr.responseText.substring(receivedLength));
             receivedLength = xhr.responseText.length;
-            botMessage.innerHTML = '<b>Gemini:</b> ' + renderMarkdown(replyText || 'Tidak ada respons dari model.');
+            streamFinished = true;
+            animateReply();
           } else {
             botMessage.parentNode.removeChild(botMessage);
             var errorText = 'Gagal koneksi (' + xhr.status + ').';
@@ -120,11 +124,30 @@
             }
             if (part) {
               replyText += part;
-              botMessage.innerHTML = '<b>Gemini:</b> ' + renderMarkdown(replyText) + '<span class="cursor">&#9612;</span>';
-              box.scrollTop = box.scrollHeight;
+              animateReply();
             }
           } catch (e) {}
         }
+      }
+
+      // Fallback typewriter: bila proxy menggabungkan seluruh SSE menjadi satu
+      // blok, balasan tetap terasa hidup. Hanya dua karakter tiap 30 ms agar
+      // hemat CPU pada browser BlackBerry lama.
+      function animateReply() {
+        if (typingTimer) return;
+        typingTimer = window.setInterval(function() {
+          if (shownText.length < replyText.length) {
+            shownText += replyText.substr(shownText.length, 2);
+            botMessage.innerHTML = '<b>Gemini:</b> ' + renderMarkdown(shownText) + '<span class="cursor">&#9612;</span>';
+            box.scrollTop = box.scrollHeight;
+            return;
+          }
+          if (streamFinished) {
+            window.clearInterval(typingTimer);
+            typingTimer = null;
+            botMessage.innerHTML = '<b>Gemini:</b> ' + renderMarkdown(shownText || 'Tidak ada respons dari model.');
+          }
+        }, 30);
       }
     }
 
