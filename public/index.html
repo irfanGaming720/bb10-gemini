@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Gemini BB Q10</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, Helvetica, Arial, sans-serif; }
+    body { background-color: #121212; color: #eee; height: 100vh; display: flex; flex-direction: column; padding: 6px; }
+    #chatbox { flex: 1; overflow-y: scroll; border: 1px solid #333; background: #1c1c1c; padding: 8px; border-radius: 4px; font-size: 13px; line-height: 1.4; margin-bottom: 6px; }
+    .msg { margin-bottom: 8px; word-wrap: break-word; }
+    .user { color: #5dade2; }
+    .bot { color: #58d68d; }
+    .error { color: #ec7063; }
+    .input-row { display: flex; height: 36px; gap: 4px; }
+    #input-text { flex: 1; background: #2a2a2a; border: 1px solid #444; color: #fff; padding: 6px 8px; font-size: 13px; border-radius: 4px; }
+    #btn-send { width: 60px; background: #2980b9; color: #fff; border: none; border-radius: 4px; font-weight: bold; font-size: 13px; cursor: pointer; }
+    #btn-send:disabled { background: #555; }
+  </style>
+</head>
+<body>
+
+  <div id="chatbox">
+    <div class="msg bot"><b>Gemini:</b> Siap digunakan di BB Q10!</div>
+  </div>
+
+  <div class="input-row">
+    <input type="text" id="input-text" placeholder="Ketik pesan..." autocomplete="off">
+    <button id="btn-send" onclick="sendMsg()">Kirim</button>
+  </div>
+
+  <script>
+    function sendMsg() {
+      var input = document.getElementById('input-text');
+      var btn = document.getElementById('btn-send');
+      var box = document.getElementById('chatbox');
+      var text = input.value.trim();
+
+      if (!text) return;
+
+      // Render pesan user
+      box.innerHTML += '<div class="msg user"><b>Kamu:</b> ' + escapeHtml(text) + '</div>';
+      input.value = '';
+      btn.disabled = true;
+      btn.innerText = '...';
+      box.scrollTop = box.scrollHeight;
+
+      // AJAX jadul via XMLHttpRequest
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/chat', true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          btn.disabled = false;
+          btn.innerText = 'Kirim';
+
+          if (xhr.status === 200) {
+            try {
+              var data = JSON.parse(xhr.responseText);
+              box.innerHTML += '<div class="msg bot"><b>Gemini:</b> ' + escapeHtml(data.reply) + '</div>';
+            } catch (e) {
+              box.innerHTML += '<div class="msg error"><b>System:</b> Format balasan rusak.</div>';
+            }
+          } else {
+            box.innerHTML += '<div class="msg error"><b>System:</b> Gagal koneksi (' + xhr.status + ').</div>';
+          }
+          box.scrollTop = box.scrollHeight;
+        }
+      };
+
+      xhr.send(JSON.stringify({ prompt: text }));
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+    }
+
+    document.getElementById('input-text').addEventListener('keydown', function(e) {
+      if (e.keyCode === 13) {
+        sendMsg();
+      }
+    });
+  </script>
+</body>
+</html>
