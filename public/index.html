@@ -3,84 +3,101 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Gemini</title>
+  <title>Gemini BB Q10</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, Roboto, Helvetica, Arial, sans-serif; }
     body { background-color: #131314; color: #e3e3e3; height: 100vh; display: flex; flex-direction: column; }
     
-    /* Top Header */
-    .header { height: 38px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-bottom: 1px solid #222; background: #131314; }
+    /* Header */
+    .header { height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-bottom: 1px solid #222; background: #131314; }
     .brand { font-size: 15px; font-weight: bold; background: -webkit-linear-gradient(left, #4e8cff, #b57cff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: #4e8cff; }
-    .btn-cfg { background: none; border: 1px solid #3c4043; color: #8e918f; font-size: 11px; padding: 3px 8px; border-radius: 12px; }
+    .nav-btns { display: flex; gap: 6px; }
+    .btn-nav { background: none; border: 1px solid #3c4043; color: #8e918f; font-size: 11px; padding: 3px 8px; border-radius: 12px; cursor: pointer; }
 
-    /* API Key Modal/Bar */
-    #key-panel { display: none; background: #1e1f20; padding: 6px 10px; border-bottom: 1px solid #333; gap: 4px; }
-    #key-input { flex: 1; background: #282a2c; border: 1px solid #444746; color: #fff; padding: 5px 8px; font-size: 11px; border-radius: 6px; }
-    #btn-save-key { background: #4e8cff; color: #000; border: none; font-weight: bold; font-size: 11px; padding: 5px 10px; border-radius: 6px; }
-
+    /* Panels Modal/Drawer */
+    .panel { display: none; background: #1e1f20; padding: 8px 10px; border-bottom: 1px solid #333; flex-direction: column; gap: 6px; }
+    #key-textarea { width: 100%; height: 75px; background: #282a2c; border: 1px solid #444746; color: #fff; padding: 6px; font-size: 11px; border-radius: 6px; resize: none; }
+    .btn-action { background: #4e8cff; color: #000; border: none; font-weight: bold; font-size: 11px; padding: 5px 10px; border-radius: 6px; align-self: flex-end; cursor: pointer; }
+    
     /* Chat Area */
     #chatbox { flex: 1; overflow-y: scroll; padding: 10px 8px; background: #131314; }
-    .msg-row { margin-bottom: 12px; display: flex; flex-direction: column; }
+    .msg-row { margin-bottom: 14px; display: flex; flex-direction: column; }
     
-    /* Bubble Style */
     .user-row { align-items: flex-end; }
     .user-bubble { background-color: #282a2c; color: #e3e3e3; padding: 8px 12px; border-radius: 14px 14px 2px 14px; max-width: 88%; font-size: 13px; line-height: 1.4; word-wrap: break-word; }
 
     .bot-row { align-items: flex-start; }
-    .bot-avatar { font-size: 11px; font-weight: bold; color: #7dacff; margin-bottom: 3px; }
-    .bot-bubble { color: #e3e3e3; font-size: 13px; line-height: 1.5; max-width: 96%; word-wrap: break-word; }
-	
-	/* Styling Markdown Tambahan */
-	.bot-bubble h1, .bot-bubble h2, .bot-bubble h3 { color: #e3e3e3; margin: 10px 0 6px; font-weight: 600; line-height: 1.3; }
-	.bot-bubble h1 { font-size: 16px; border-bottom: 1px solid #333; padding-bottom: 4px; }
-	.bot-bubble h2 { font-size: 15px; }
-	.bot-bubble h3 { font-size: 14px; color: #a8c7fa; }
+    .bot-header { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 3px; }
+    .bot-avatar { font-size: 11px; font-weight: bold; color: #7dacff; }
+    .btn-save-chat { background: none; border: none; color: #8e918f; font-size: 11px; cursor: pointer; padding: 0 4px; }
+    .bot-bubble { color: #e3e3e3; font-size: 13px; line-height: 1.5; max-width: 98%; word-wrap: break-word; }
     .error-bubble { color: #f28b82; font-size: 12px; padding: 4px 8px; background: #2d1e1e; border-radius: 6px; }
 
-    /* Markdown ringkas */
+    /* Markdown Styling */
     .bot-bubble strong { color: #fff; }
     .bot-bubble code { background: #282a2c; padding: 1px 4px; border-radius: 3px; font-family: monospace; font-size: 12px; color: #c4c7c5; }
+    .bot-bubble h1, .bot-bubble h2, .bot-bubble h3 { color: #e3e3e3; margin: 8px 0 4px; font-weight: 600; line-height: 1.3; }
+    .bot-bubble h1 { font-size: 16px; border-bottom: 1px solid #333; padding-bottom: 3px; }
+    .bot-bubble h2 { font-size: 15px; }
+    .bot-bubble h3 { font-size: 13px; color: #a8c7fa; }
     .bot-bubble ul { margin: 4px 0 4px 16px; }
     .bot-bubble li { margin-bottom: 2px; }
-	
-	/* Wrapper Tabel agar bisa di-scroll horizontal jika kolomnya lebar */
-	.table-wrap { overflow-x: auto; margin: 8px 0; max-width: 100%; border: 1px solid #3c4043; border-radius: 6px; }
-	.bot-bubble table { border-collapse: collapse; width: 100%; font-size: 12px; }
-	.bot-bubble th, .bot-bubble td { border: 1px solid #3c4043; padding: 5px 8px; text-align: left; }
-	.bot-bubble th { background-color: #1e1f20; color: #7dacff; font-weight: bold; }
-	.bot-bubble tr:nth-child(even) { background-color: #18191a; }
 
-	/* Code Block Multi-line */
-	.bot-bubble pre { background: #1e1f20; border: 1px solid #333; border-radius: 4px; padding: 6px; margin: 6px 0; overflow-x: auto; }
-	.bot-bubble pre code { background: transparent; padding: 0; }
+    /* Table Markdown */
+    .table-wrap { overflow-x: auto; margin: 8px 0; max-width: 100%; border: 1px solid #3c4043; border-radius: 6px; }
+    .bot-bubble table { border-collapse: collapse; width: 100%; font-size: 12px; }
+    .bot-bubble th, .bot-bubble td { border: 1px solid #3c4043; padding: 5px 8px; text-align: left; }
+    .bot-bubble th { background-color: #1e1f20; color: #7dacff; font-weight: bold; }
+    .bot-bubble tr:nth-child(even) { background-color: #18191a; }
 
-    /* Bottom Input Bar khas Gemini */
+    /* Input Footer */
     .footer { padding: 6px 8px; background: #131314; }
     .input-box { display: flex; align-items: center; background: #1e1f20; border: 1px solid #3c4043; border-radius: 20px; padding: 2px 4px 2px 12px; height: 38px; }
     #prompt-input { flex: 1; background: transparent; border: none; color: #e3e3e3; font-size: 13px; outline: none; }
-    #btn-send { width: 30px; height: 30px; border-radius: 50%; border: none; background: #7dacff; color: #040e1b; font-weight: bold; font-size: 14px; line-height: 30px; text-align: center; }
+    #btn-send { width: 30px; height: 30px; border-radius: 50%; border: none; background: #7dacff; color: #040e1b; font-weight: bold; font-size: 14px; cursor: pointer; text-align: center; }
     #btn-send:disabled { background: #3c4043; color: #8e918f; }
+
+    /* Modal List Saved Chats */
+    #saved-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #131314; z-index: 10; flex-direction: column; }
+    .saved-header { height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-bottom: 1px solid #222; }
+    #saved-list { flex: 1; overflow-y: scroll; padding: 10px; }
+    .saved-item { background: #1e1f20; border: 1px solid #333; border-radius: 6px; padding: 8px; margin-bottom: 10px; }
+    .saved-item-title { font-weight: bold; color: #7dacff; font-size: 12px; margin-bottom: 4px; }
+    .saved-item-body { font-size: 12px; line-height: 1.4; color: #ccc; max-height: 120px; overflow-y: auto; margin-bottom: 8px; white-space: pre-wrap; }
+    .saved-item-footer { display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #777; }
+    .btn-del { background: #333; color: #eee; border: 1px solid #444; border-radius: 4px; padding: 4px 8px; font-size: 11px; cursor: pointer; }
+    .btn-del-confirm { background: #d93025; color: #fff; border-color: #d93025; }
   </style>
 </head>
 <body>
 
+  <!-- Header -->
   <div class="header">
     <div class="brand">Gemini</div>
-    <button class="btn-cfg" onclick="toggleKeyPanel()">API Key</button>
-  </div>
-
-  <div id="key-panel">
-    <input type="password" id="key-input" placeholder="Masukkan Google Gemini API Key...">
-    <button id="btn-save-key" onclick="saveApiKey()">Simpan</button>
-  </div>
-
-  <div id="chatbox">
-    <div class="msg-row bot-row">
-      <div class="bot-avatar">&#10022; Gemini</div>
-      <div class="bot-bubble">Halo! Ada yang bisa saya bantu di BB Q10 hari ini?</div>
+    <div class="nav-btns">
+      <button class="btn-nav" onclick="openSavedModal()">Favorit</button>
+      <button class="btn-nav" onclick="toggleKeyPanel()">API Keys</button>
     </div>
   </div>
 
+  <!-- Key Management Panel -->
+  <div id="key-panel" class="panel">
+    <div style="font-size:11px; color:#aaa;">Masukkan 1 API Key per baris (tekan Enter):</div>
+    <textarea id="key-textarea" placeholder="AIzaSyA...&#10;AIzaSyB...&#10;AIzaSyC..."></textarea>
+    <button class="btn-action" onclick="saveApiKeys()">Simpan Keys</button>
+  </div>
+
+  <!-- Chat Area -->
+  <div id="chatbox">
+    <div class="msg-row bot-row">
+      <div class="bot-header">
+        <span class="bot-avatar">&#10022; Gemini</span>
+      </div>
+      <div class="bot-bubble">Siap digunakan di BB Q10. Masukkan API Key kamu untuk memulai.</div>
+    </div>
+  </div>
+
+  <!-- Footer Input -->
   <div class="footer">
     <div class="input-box">
       <input type="text" id="prompt-input" placeholder="Ketik pesan..." autocomplete="off">
@@ -88,12 +105,36 @@
     </div>
   </div>
 
+  <!-- Saved Chats Modal -->
+  <div id="saved-modal">
+    <div class="saved-header">
+      <span style="font-weight:bold; font-size:14px; color:#7dacff;">Chat Favorit</span>
+      <button class="btn-nav" onclick="closeSavedModal()">Tutup</button>
+    </div>
+    <div id="saved-list"></div>
+  </div>
+
   <script>
-    var currentKey = localStorage.getItem('gemini_user_api_key') || '';
-    if (currentKey) {
-      document.getElementById('key-input').value = currentKey;
+    // Inisialisasi API Keys
+    var keys = getStoredKeys();
+    var lastUserPrompt = '';
+
+    if (keys.length > 0) {
+      document.getElementById('key-textarea').value = keys.join('\n');
     } else {
       document.getElementById('key-panel').style.display = 'flex';
+    }
+
+    function getStoredKeys() {
+      var raw = localStorage.getItem('gemini_user_keys') || '';
+      if (!raw) return [];
+      var list = raw.split('\n');
+      var clean = [];
+      for (var i = 0; i < list.length; i++) {
+        var k = list[i].trim();
+        if (k) clean.push(k);
+      }
+      return clean;
     }
 
     function toggleKeyPanel() {
@@ -101,61 +142,103 @@
       panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
     }
 
-    function saveApiKey() {
-      var key = document.getElementById('key-input').value.trim();
-      if (!key) {
-        alert('API Key kosong!');
+    function saveApiKeys() {
+      var text = document.getElementById('key-textarea').value.trim();
+      if (!text) {
+        alert('API Key tidak boleh kosong!');
         return;
       }
-      localStorage.setItem('gemini_user_api_key', key);
-      currentKey = key;
+      localStorage.setItem('gemini_user_keys', text);
+      keys = getStoredKeys();
       document.getElementById('key-panel').style.display = 'none';
-      alert('Key berhasil disimpan di BB!');
+      alert(keys.length + ' Key berhasil disimpan!');
     }
 
+    // Pengiriman Pesan & Multi-Key Failover
     function sendMsg() {
       var input = document.getElementById('prompt-input');
       var btn = document.getElementById('btn-send');
       var box = document.getElementById('chatbox');
       var text = input.value.trim();
 
-      if (!currentKey) {
-        alert('Simpan API Key kamu dulu di tombol kanan atas!');
+      if (keys.length === 0) {
+        alert('Isi API Key dulu di menu atas!');
         document.getElementById('key-panel').style.display = 'flex';
         return;
       }
       if (!text) return;
 
-      // Render Bubble Pengguna
+      lastUserPrompt = text;
+
+      // Bubble user
       box.innerHTML += '<div class="msg-row user-row"><div class="user-bubble">' + escapeHtml(text) + '</div></div>';
       input.value = '';
       btn.disabled = true;
       box.scrollTop = box.scrollHeight;
 
-      // Indikator respon bot
+      // Buat penampung respons bot
       var botRow = document.createElement('div');
       botRow.className = 'msg-row bot-row';
-      botRow.innerHTML = '<div class="bot-avatar">&#10022; Gemini</div><div class="bot-bubble" id="loading-node"><i>Sedang berpikir...</i></div>';
+      botRow.innerHTML = '<div class="bot-header"><span class="bot-avatar">&#10022; Gemini</span></div>' +
+                         '<div class="bot-bubble" id="loading-node"><i>Sedang berpikir...</i></div>';
       box.appendChild(botRow);
       box.scrollTop = box.scrollHeight;
 
-      // Request AJAX ES5
+      // Coba request dengan rotasi key mulai dari indeks 0
+      executeRequest(text, 0, botRow);
+    }
+
+    function executeRequest(text, keyIndex, botRow) {
+      var btn = document.getElementById('btn-send');
+      var box = document.getElementById('chatbox');
+      var loadingNode = document.getElementById('loading-node');
+
+      if (keyIndex >= keys.length) {
+        btn.disabled = false;
+        if (loadingNode) {
+          loadingNode.removeAttribute('id');
+          loadingNode.innerHTML = '<span class="error-bubble">Semua API Key limit / error.</span>';
+        }
+        box.scrollTop = box.scrollHeight;
+        return;
+      }
+
+      var currentApiKey = keys[keyIndex];
       var xhr = new XMLHttpRequest();
       xhr.open('POST', '/api/chat', true);
       xhr.setRequestHeader('Content-Type', 'application/json');
 
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
+          // Status 429: Rate Limit -> Coba key baris berikutnya
+          if (xhr.status === 429 && (keyIndex + 1) < keys.length) {
+            executeRequest(text, keyIndex + 1, botRow);
+            return;
+          }
+
           btn.disabled = false;
-          var loadingNode = document.getElementById('loading-node');
+          if (!loadingNode) return;
+          loadingNode.removeAttribute('id');
 
           if (xhr.status === 200) {
             try {
               var data = JSON.parse(xhr.responseText);
-              loadingNode.removeAttribute('id');
-              loadingNode.innerHTML = renderMarkdown(data.reply);
+              var rawReply = data.reply;
+              loadingNode.innerHTML = renderMarkdown(rawReply);
+
+              // Sisipkan tombol simpan favorit di header gelembung bot
+              var headerElem = botRow.querySelector('.bot-header');
+              var saveBtn = document.createElement('button');
+              saveBtn.className = 'btn-save-chat';
+              saveBtn.innerText = '☆ Simpan';
+              saveBtn.onclick = function() {
+                saveChatToStorage(text, rawReply);
+                saveBtn.innerText = '★ Tersimpan';
+                saveBtn.disabled = true;
+              };
+              headerElem.appendChild(saveBtn);
+
             } catch (e) {
-              loadingNode.removeAttribute('id');
               loadingNode.innerHTML = '<span class="error-bubble">Format respons rusak.</span>';
             }
           } else {
@@ -164,21 +247,102 @@
               var errData = JSON.parse(xhr.responseText);
               if (errData.reply) errMsg = errData.reply;
             } catch (e) {}
-            loadingNode.removeAttribute('id');
             loadingNode.innerHTML = '<span class="error-bubble">' + escapeHtml(errMsg) + '</span>';
           }
           box.scrollTop = box.scrollHeight;
         }
       };
 
-      xhr.send(JSON.stringify({ prompt: text, apiKey: currentKey }));
+      xhr.send(JSON.stringify({ prompt: text, apiKey: currentApiKey }));
     }
 
-    function escapeHtml(str) {
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+    // Fitur Simpan & Hapus dengan Konfirmasi 1.5 Detik
+    function getSavedChats() {
+      return JSON.parse(localStorage.getItem('gemini_saved_items') || '[]');
     }
 
-function renderMarkdown(str) {
+    function saveChatToStorage(promptText, replyText) {
+      var list = getSavedChats();
+      var now = new Date();
+      var timeStr = now.toLocaleDateString() + ' ' + ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
+      list.unshift({
+        id: new Date().getTime(),
+        prompt: promptText,
+        reply: replyText,
+        time: timeStr
+      });
+      localStorage.setItem('gemini_saved_items', JSON.stringify(list));
+    }
+
+    function openSavedModal() {
+      renderSavedList();
+      document.getElementById('saved-modal').style.display = 'flex';
+    }
+
+    function closeSavedModal() {
+      document.getElementById('saved-modal').style.display = 'none';
+    }
+
+    function renderSavedList() {
+      var container = document.getElementById('saved-list');
+      var list = getSavedChats();
+
+      if (list.length === 0) {
+        container.innerHTML = '<div style="color:#777; text-align:center; margin-top:30px; font-size:12px;">Belum ada riwayat favorit tersimpan.</div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < list.length; i++) {
+        var item = list[i];
+        html += '<div class="saved-item" id="item-' + item.id + '">' +
+                  '<div class="saved-item-title">Q: ' + escapeHtml(item.prompt) + '</div>' +
+                  '<div class="saved-item-body">' + escapeHtml(item.reply) + '</div>' +
+                  '<div class="saved-item-footer">' +
+                    '<span>' + item.time + '</span>' +
+                    '<button class="btn-del" id="del-' + item.id + '" onclick="initiateDelete(' + item.id + ')">Hapus</button>' +
+                  '</div>' +
+                '</div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function initiateDelete(id) {
+      var btn = document.getElementById('del-' + id);
+      if (!btn) return;
+
+      // Cegah multi-klik: nonaktifkan tombol dan jalankan hitung mundur 1,5 detik
+      btn.disabled = true;
+      btn.innerText = 'Yakin? (1.5s)';
+
+      var elapsed = 0;
+      var interval = setInterval(function() {
+        elapsed += 500;
+        var remaining = (1.5 - (elapsed / 1000)).toFixed(1);
+        if (remaining > 0) {
+          btn.innerText = 'Yakin? (' + remaining + 's)';
+        } else {
+          clearInterval(interval);
+          btn.innerText = 'Hapus Sekarang';
+          btn.disabled = false;
+          btn.className = 'btn-del btn-del-confirm';
+
+          // Klik tahap dua untuk eksekusi penghapusan riwayat
+          btn.onclick = function() {
+            var list = getSavedChats();
+            var filtered = [];
+            for (var j = 0; j < list.length; j++) {
+              if (list[j].id !== id) filtered.push(list[j]);
+            }
+            localStorage.setItem('gemini_saved_items', JSON.stringify(filtered));
+            renderSavedList();
+          };
+        }
+      }, 500);
+    }
+
+    // Markdown Parser Ringan
+    function renderMarkdown(str) {
       var safe = String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       safe = safe.replace(/`([^`\n]+)`/g, '<code>$1</code>');
       safe = safe.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
@@ -193,25 +357,21 @@ function renderMarkdown(str) {
       for (var i = 0; i < lines.length; i++) {
         var line = lines[i].trim();
 
-        // 1. Deteksi Baris Tabel
+        // Deteksi Tabel
         if (line.indexOf('|') === 0 && line.lastIndexOf('|') === line.length - 1) {
           if (inList) { html.push('</ul>'); inList = false; }
-
           if (/^\|(\s*:?-+:?\s*\|)+$/.test(line)) {
             tableHasHeader = true;
             continue;
           }
-
           if (!inTable) {
             html.push('<div class="table-wrap"><table>');
             inTable = true;
             tableHasHeader = false;
           }
-
           var cells = line.split('|');
           cells.shift();
           cells.pop();
-
           var rowHtml = '<tr>';
           var tag = (!tableHasHeader) ? 'th' : 'td';
           for (var c = 0; c < cells.length; c++) {
@@ -227,7 +387,7 @@ function renderMarkdown(str) {
           }
         }
 
-        // 2. Deteksi Bullet List
+        // Deteksi List
         var item = line.match(/^[-*]\s+(.+)$/);
         if (item) {
           if (!inList) { html.push('<ul>'); inList = true; }
@@ -236,7 +396,7 @@ function renderMarkdown(str) {
         }
         if (inList) { html.push('</ul>'); inList = false; }
 
-        // 3. Deteksi Heading (#, ##, ###)
+        // Deteksi Heading
         var heading = line.match(/^(#{1,3})\s+(.+)$/);
         if (heading) {
           var level = heading[1].length;
@@ -244,7 +404,6 @@ function renderMarkdown(str) {
           continue;
         }
 
-        // 4. Baris Teks Biasa
         if (line === '') {
           html.push('<br>');
         } else {
@@ -255,6 +414,10 @@ function renderMarkdown(str) {
       if (inList) html.push('</ul>');
       if (inTable) html.push('</table></div>');
       return html.join('');
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
     }
 
     document.getElementById('prompt-input').addEventListener('keydown', function(e) {
