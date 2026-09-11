@@ -11,8 +11,8 @@
     /* Header */
     .header { height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-bottom: 1px solid #222; background: #131314; }
     .brand { font-size: 15px; font-weight: bold; background: -webkit-linear-gradient(left, #4e8cff, #b57cff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: #4e8cff; }
-    .nav-btns { display: flex; gap: 6px; }
-    .btn-nav { background: none; border: 1px solid #3c4043; color: #8e918f; font-size: 11px; padding: 3px 8px; border-radius: 12px; cursor: pointer; }
+    .nav-btns { display: flex; gap: 4px; }
+    .btn-nav { background: none; border: 1px solid #3c4043; color: #8e918f; font-size: 11px; padding: 3px 6px; border-radius: 12px; cursor: pointer; }
 
     /* Panels Modal/Drawer */
     .panel { display: none; background: #1e1f20; padding: 8px 10px; border-bottom: 1px solid #333; flex-direction: column; gap: 6px; }
@@ -75,8 +75,9 @@
   <div class="header">
     <div class="brand">Gemini</div>
     <div class="nav-btns">
+      <button class="btn-nav" onclick="resetSession()">Reset Sesi</button>
       <button class="btn-nav" onclick="openSavedModal()">Favorit</button>
-      <button class="btn-nav" onclick="toggleKeyPanel()">API Keys</button>
+      <button class="btn-nav" onclick="toggleKeyPanel()">Keys</button>
     </div>
   </div>
 
@@ -93,7 +94,7 @@
       <div class="bot-header">
         <span class="bot-avatar">&#10022; Gemini</span>
       </div>
-      <div class="bot-bubble">Siap digunakan di BB Q10. Masukkan API Key kamu untuk memulai.</div>
+      <div class="bot-bubble">Siap digunakan di BB Q10. Mode percakapan berkelanjutan aktif (ingat s.d. 3 respons terakhir).</div>
     </div>
   </div>
 
@@ -117,7 +118,9 @@
   <script>
     // Inisialisasi API Keys
     var keys = getStoredKeys();
-    var lastUserPrompt = '';
+    
+    // Konteks Sesi Obrolan (Sliding Window: maks 6 entri / 3 turn)
+    var chatHistory = [];
 
     if (keys.length > 0) {
       document.getElementById('key-textarea').value = keys.join('\n');
@@ -151,7 +154,25 @@
       localStorage.setItem('gemini_user_keys', text);
       keys = getStoredKeys();
       document.getElementById('key-panel').style.display = 'none';
-      alert(keys.length + ' Key berhasil disimpan!');
+      alert(keys.length + ' Key tersimpan!');
+    }
+
+    function resetSession() {
+      chatHistory = [];
+      var box = document.getElementById('chatbox');
+      box.innerHTML = '<div class="msg-row bot-row"><div class="bot-header"><span class="bot-avatar">&#10022; Gemini</span></div>' +
+                      '<div class="bot-bubble">Sesi percakapan direset. Konteks kembali dari awal.</div></div>';
+    }
+
+    function pushHistory(role, text) {
+      chatHistory.push({
+        role: role,
+        parts: [{ text: text }]
+      });
+      // Menjaga memori BB Q10: Batasi maksimal 6 item terakhir (3 pasang dialog)
+      while (chatHistory.length > 6) {
+        chatHistory.shift();
+      }
     }
 
     // Pengiriman Pesan & Multi-Key Failover
@@ -168,7 +189,8 @@
       }
       if (!text) return;
 
-      lastUserPrompt = text;
+      // Masukkan teks ke memori konteks percakapan
+      pushHistory('user', text);
 
       // Bubble user
       box.innerHTML += '<div class="msg-row user-row"><div class="user-bubble">' + escapeHtml(text) + '</div></div>';
@@ -184,17 +206,21 @@
       box.appendChild(botRow);
       box.scrollTop = box.scrollHeight;
 
-      // Coba request dengan rotasi key mulai dari indeks 0
+      // Jalankan request ke backend relay
       executeRequest(text, 0, botRow);
     }
 
-    function executeRequest(text, keyIndex, botRow) {
+    function executeRequest(currentPromptText, keyIndex, botRow) {
       var btn = document.getElementById('btn-send');
       var box = document.getElementById('chatbox');
       var loadingNode = document.getElementById('loading-node');
 
       if (keyIndex >= keys.length) {
         btn.disabled = false;
+        // Hapus input user terakhir dari history jika seluruh API key gagal
+        if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
+          chatHistory.pop();
+        }
         if (loadingNode) {
           loadingNode.removeAttribute('id');
           loadingNode.innerHTML = '<span class="error-bubble">Semua API Key limit / error.</span>';
@@ -210,11 +236,11 @@
 
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
-          // Status 429: Rate Limit -> Coba key baris berikutnya
-          if (xhr.status === 429 && (keyIndex + 1) < keys.length) {
-            executeRequest(text, keyIndex + 1, botRow);
-            return;
-          }
+          // KODE BARU: Jika status BUKAN 200 (baik 429, 503, 500, dll) dan masih ada key cadangan, langsung rollover!
+		if (xhr.status !== 200 && (keyIndex + 1) < keys.length) {
+			executeRequest(currentPromptText, keyIndex + 1, botRow);
+			return;
+		}
 
           btn.disabled = false;
           if (!loadingNode) return;
@@ -226,13 +252,16 @@
               var rawReply = data.reply;
               loadingNode.innerHTML = renderMarkdown(rawReply);
 
-              // Sisipkan tombol simpan favorit di header gelembung bot
+              // Simpan respons bot ke dalam riwayat obrolan
+              pushHistory('model', rawReply);
+
+              // Sisipkan tombol simpan favorit
               var headerElem = botRow.querySelector('.bot-header');
               var saveBtn = document.createElement('button');
               saveBtn.className = 'btn-save-chat';
               saveBtn.innerText = '☆ Simpan';
               saveBtn.onclick = function() {
-                saveChatToStorage(text, rawReply);
+                saveChatToStorage(currentPromptText, rawReply);
                 saveBtn.innerText = '★ Tersimpan';
                 saveBtn.disabled = true;
               };
@@ -242,6 +271,10 @@
               loadingNode.innerHTML = '<span class="error-bubble">Format respons rusak.</span>';
             }
           } else {
+            // Hapus turn user terakhir bila gagal mendapatkan balasan dari model
+            if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
+              chatHistory.pop();
+            }
             var errMsg = 'Gagal terhubung (' + xhr.status + ')';
             try {
               var errData = JSON.parse(xhr.responseText);
@@ -253,7 +286,8 @@
         }
       };
 
-      xhr.send(JSON.stringify({ prompt: text, apiKey: currentApiKey }));
+      // Kirim array chatHistory lengkap agar Gemini memahami konteks percakapan
+      xhr.send(JSON.stringify({ contents: chatHistory, apiKey: currentApiKey }));
     }
 
     // Fitur Simpan & Hapus dengan Konfirmasi 1.5 Detik
