@@ -311,7 +311,6 @@
       var btn = document.getElementById('del-' + id);
       if (!btn) return;
 
-      // Cegah multi-klik: nonaktifkan tombol dan jalankan hitung mundur 1,5 detik
       btn.disabled = true;
       btn.innerText = 'Yakin? (1.5s)';
 
@@ -327,7 +326,6 @@
           btn.disabled = false;
           btn.className = 'btn-del btn-del-confirm';
 
-          // Klik tahap dua untuk eksekusi penghapusan riwayat
           btn.onclick = function() {
             var list = getSavedChats();
             var filtered = [];
@@ -341,12 +339,28 @@
       }, 500);
     }
 
-    // Markdown Parser Ringan
+    // Markdown Parser Ringan & Akurat untuk BB10 WebKit
     function renderMarkdown(str) {
-      var safe = String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      safe = safe.replace(/`([^`\n]+)`/g, '<code>$1</code>');
-      safe = safe.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
-      safe = safe.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+      if (!str) return '';
+
+      // 1. Escape karakter dasar HTML
+      var safe = String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      // 2. Inline Code
+      safe = safe.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+      // 3. Bold + Italic (3 bintang: ***teks***)
+      safe = safe.replace(/\*\*\*([\s\S]+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+
+      // 4. Bold (2 bintang: **teks**)
+      safe = safe.replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
+
+      // 5. Italic (1 bintang: *teks* atau underscore: _teks_)
+      safe = safe.replace(/(^|[^\*])\*([^\*\n]+?)\*(?!\*)/g, '$1<em>$2</em>');
+      safe = safe.replace(/(^|[^_])_([^_\n]+?)_(?!_)/g, '$1<em>$2</em>');
 
       var lines = safe.split('\n');
       var html = [];
@@ -355,7 +369,25 @@
       var tableHasHeader = false;
 
       for (var i = 0; i < lines.length; i++) {
-        var line = lines[i].trim();
+        var rawLine = lines[i];
+        var line = rawLine.trim();
+
+        // Garis horizontal pemisah (--- atau ***)
+        if (/^(\-{3,}|\*{3,})$/.test(line)) {
+          if (inList) { html.push('</ul>'); inList = false; }
+          if (inTable) { html.push('</table></div>'); inTable = false; }
+          html.push('<hr style="border:none; border-top:1px solid #333; margin:8px 0;">');
+          continue;
+        }
+
+        // Blockquote / Kutipan (> teks)
+        if (line.indexOf('&gt;') === 0) {
+          if (inList) { html.push('</ul>'); inList = false; }
+          if (inTable) { html.push('</table></div>'); inTable = false; }
+          var quoteText = line.replace(/^&gt;\s?/, '');
+          html.push('<blockquote style="border-left:3px solid #7dacff; padding-left:8px; margin:6px 0; color:#aaa;">' + quoteText + '</blockquote>');
+          continue;
+        }
 
         // Deteksi Tabel
         if (line.indexOf('|') === 0 && line.lastIndexOf('|') === line.length - 1) {
@@ -387,16 +419,17 @@
           }
         }
 
-        // Deteksi List
-        var item = line.match(/^[-*]\s+(.+)$/);
+        // Deteksi List Bullet (* atau - atau •)
+        var item = line.match(/^[-*•]\s+(.+)$/);
         if (item) {
           if (!inList) { html.push('<ul>'); inList = true; }
           html.push('<li>' + item[1] + '</li>');
           continue;
+        } else {
+          if (inList) { html.push('</ul>'); inList = false; }
         }
-        if (inList) { html.push('</ul>'); inList = false; }
 
-        // Deteksi Heading
+        // Deteksi Heading (#, ##, ###)
         var heading = line.match(/^(#{1,3})\s+(.+)$/);
         if (heading) {
           var level = heading[1].length;
@@ -404,6 +437,7 @@
           continue;
         }
 
+        // Baris kosong atau teks biasa
         if (line === '') {
           html.push('<br>');
         } else {
