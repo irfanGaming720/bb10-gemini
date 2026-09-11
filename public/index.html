@@ -3,160 +3,165 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Gemini BB Q10</title>
+  <title>Gemini</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, Helvetica, Arial, sans-serif; }
-    body { background-color: #121212; color: #eee; height: 100vh; display: flex; flex-direction: column; padding: 6px; }
-    #chatbox { flex: 1; overflow-y: scroll; border: 1px solid #333; background: #1c1c1c; padding: 8px; border-radius: 4px; font-size: 13px; line-height: 1.4; margin-bottom: 6px; }
-    .msg { margin-bottom: 8px; word-wrap: break-word; }
-    .user { color: #5dade2; }
-    .bot { color: #58d68d; }
-    .error { color: #ec7063; }
-    .markdown h1, .markdown h2, .markdown h3 { color: #f4d03f; margin: 8px 0 4px; line-height: 1.2; }
-    .markdown h1 { font-size: 18px; }
-    .markdown h2 { font-size: 16px; }
-    .markdown h3 { font-size: 14px; }
-    .markdown ul { margin: 4px 0 4px 18px; padding: 0; }
-    .markdown code { color: #f5b7b1; background: #252525; padding: 1px 3px; }
-    .cursor { display: inline-block; margin-left: 2px; animation: blink 0.8s steps(1) infinite; }
-    @keyframes blink { 50% { opacity: 0; } }
-    .input-row { display: flex; height: 36px; gap: 4px; }
-    #input-text { flex: 1; background: #2a2a2a; border: 1px solid #444; color: #fff; padding: 6px 8px; font-size: 13px; border-radius: 4px; }
-    #btn-send { width: 60px; background: #2980b9; color: #fff; border: none; border-radius: 4px; font-weight: bold; font-size: 13px; cursor: pointer; }
-    #btn-send:disabled { background: #555; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: #131314; color: #e3e3e3; height: 100vh; display: flex; flex-direction: column; }
+    
+    /* Top Header */
+    .header { height: 38px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-bottom: 1px solid #222; background: #131314; }
+    .brand { font-size: 15px; font-weight: bold; background: -webkit-linear-gradient(left, #4e8cff, #b57cff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: #4e8cff; }
+    .btn-cfg { background: none; border: 1px solid #3c4043; color: #8e918f; font-size: 11px; padding: 3px 8px; border-radius: 12px; }
+
+    /* API Key Modal/Bar */
+    #key-panel { display: none; background: #1e1f20; padding: 6px 10px; border-bottom: 1px solid #333; gap: 4px; }
+    #key-input { flex: 1; background: #282a2c; border: 1px solid #444746; color: #fff; padding: 5px 8px; font-size: 11px; border-radius: 6px; }
+    #btn-save-key { background: #4e8cff; color: #000; border: none; font-weight: bold; font-size: 11px; padding: 5px 10px; border-radius: 6px; }
+
+    /* Chat Area */
+    #chatbox { flex: 1; overflow-y: scroll; padding: 10px 8px; background: #131314; }
+    .msg-row { margin-bottom: 12px; display: flex; flex-direction: column; }
+    
+    /* Bubble Style */
+    .user-row { align-items: flex-end; }
+    .user-bubble { background-color: #282a2c; color: #e3e3e3; padding: 8px 12px; border-radius: 14px 14px 2px 14px; max-width: 88%; font-size: 13px; line-height: 1.4; word-wrap: break-word; }
+
+    .bot-row { align-items: flex-start; }
+    .bot-avatar { font-size: 11px; font-weight: bold; color: #7dacff; margin-bottom: 3px; }
+    .bot-bubble { color: #e3e3e3; font-size: 13px; line-height: 1.5; max-width: 96%; word-wrap: break-word; }
+    
+    .error-bubble { color: #f28b82; font-size: 12px; padding: 4px 8px; background: #2d1e1e; border-radius: 6px; }
+
+    /* Markdown ringkas */
+    .bot-bubble strong { color: #fff; }
+    .bot-bubble code { background: #282a2c; padding: 1px 4px; border-radius: 3px; font-family: monospace; font-size: 12px; color: #c4c7c5; }
+    .bot-bubble ul { margin: 4px 0 4px 16px; }
+    .bot-bubble li { margin-bottom: 2px; }
+
+    /* Bottom Input Bar khas Gemini */
+    .footer { padding: 6px 8px; background: #131314; }
+    .input-box { display: flex; align-items: center; background: #1e1f20; border: 1px solid #3c4043; border-radius: 20px; padding: 2px 4px 2px 12px; height: 38px; }
+    #prompt-input { flex: 1; background: transparent; border: none; color: #e3e3e3; font-size: 13px; outline: none; }
+    #btn-send { width: 30px; height: 30px; border-radius: 50%; border: none; background: #7dacff; color: #040e1b; font-weight: bold; font-size: 14px; line-height: 30px; text-align: center; }
+    #btn-send:disabled { background: #3c4043; color: #8e918f; }
   </style>
 </head>
 <body>
 
-  <div id="chatbox">
-    <div class="msg bot"><b>Gemini:</b> Siap digunakan di BB Q10!</div>
+  <div class="header">
+    <div class="brand">Gemini</div>
+    <button class="btn-cfg" onclick="toggleKeyPanel()">API Key</button>
   </div>
 
-  <div class="input-row">
-    <input type="text" id="input-text" placeholder="Ketik pesan..." autocomplete="off">
-    <button id="btn-send" onclick="sendMsg()">Kirim</button>
+  <div id="key-panel">
+    <input type="password" id="key-input" placeholder="Masukkan Google Gemini API Key...">
+    <button id="btn-save-key" onclick="saveApiKey()">Simpan</button>
+  </div>
+
+  <div id="chatbox">
+    <div class="msg-row bot-row">
+      <div class="bot-avatar">&#10022; Gemini</div>
+      <div class="bot-bubble">Halo! Ada yang bisa saya bantu di BB Q10 hari ini?</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="input-box">
+      <input type="text" id="prompt-input" placeholder="Ketik pesan..." autocomplete="off">
+      <button id="btn-send" onclick="sendMsg()">&#9650;</button>
+    </div>
   </div>
 
   <script>
+    var currentKey = localStorage.getItem('gemini_user_api_key') || '';
+    if (currentKey) {
+      document.getElementById('key-input').value = currentKey;
+    } else {
+      document.getElementById('key-panel').style.display = 'flex';
+    }
+
+    function toggleKeyPanel() {
+      var panel = document.getElementById('key-panel');
+      panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    function saveApiKey() {
+      var key = document.getElementById('key-input').value.trim();
+      if (!key) {
+        alert('API Key kosong!');
+        return;
+      }
+      localStorage.setItem('gemini_user_api_key', key);
+      currentKey = key;
+      document.getElementById('key-panel').style.display = 'none';
+      alert('Key berhasil disimpan di BB!');
+    }
+
     function sendMsg() {
-      var input = document.getElementById('input-text');
+      var input = document.getElementById('prompt-input');
       var btn = document.getElementById('btn-send');
       var box = document.getElementById('chatbox');
       var text = input.value.trim();
 
+      if (!currentKey) {
+        alert('Simpan API Key kamu dulu di tombol kanan atas!');
+        document.getElementById('key-panel').style.display = 'flex';
+        return;
+      }
       if (!text) return;
 
-      // Render pesan user dan tempat balasan yang akan diisi bertahap.
-      var userMessage = document.createElement('div');
-      userMessage.className = 'msg user';
-      userMessage.innerHTML = '<b>Kamu:</b> ' + escapeHtml(text);
-      box.appendChild(userMessage);
-
-      var botMessage = document.createElement('div');
-      botMessage.className = 'msg bot markdown';
-      botMessage.innerHTML = '<b>Gemini:</b> sedang menulis<span class="cursor">&#9612;</span>';
-      box.appendChild(botMessage);
+      // Render Bubble Pengguna
+      box.innerHTML += '<div class="msg-row user-row"><div class="user-bubble">' + escapeHtml(text) + '</div></div>';
       input.value = '';
       btn.disabled = true;
-      btn.innerText = '...';
       box.scrollTop = box.scrollHeight;
 
-      // AJAX jadul via XMLHttpRequest
+      // Indikator respon bot
+      var botRow = document.createElement('div');
+      botRow.className = 'msg-row bot-row';
+      botRow.innerHTML = '<div class="bot-avatar">&#10022; Gemini</div><div class="bot-bubble" id="loading-node"><i>Sedang berpikir...</i></div>';
+      box.appendChild(botRow);
+      box.scrollTop = box.scrollHeight;
+
+      // Request AJAX ES5
       var xhr = new XMLHttpRequest();
-      var receivedLength = 0;
-      var sseBuffer = '';
-      var replyText = '';
-      var shownText = '';
-      var streamFinished = false;
-      var typingTimer = null;
-      xhr.open('POST', '/api/chat?stream=1', true);
+      xhr.open('POST', '/api/chat', true);
       xhr.setRequestHeader('Content-Type', 'application/json');
 
       xhr.onreadystatechange = function() {
-        if (xhr.readyState === 3 && xhr.status === 200) {
-          readStream(xhr.responseText.substring(receivedLength));
-          receivedLength = xhr.responseText.length;
-        }
-
         if (xhr.readyState === 4) {
           btn.disabled = false;
-          btn.innerText = 'Kirim';
+          var loadingNode = document.getElementById('loading-node');
 
           if (xhr.status === 200) {
-            readStream(xhr.responseText.substring(receivedLength));
-            receivedLength = xhr.responseText.length;
-            streamFinished = true;
-            animateReply();
-          } else {
-            botMessage.parentNode.removeChild(botMessage);
-            var errorText = 'Gagal koneksi (' + xhr.status + ').';
             try {
-              var errorData = JSON.parse(xhr.responseText);
-              if (errorData.reply) errorText = errorData.reply;
+              var data = JSON.parse(xhr.responseText);
+              loadingNode.removeAttribute('id');
+              loadingNode.innerHTML = renderMarkdown(data.reply);
+            } catch (e) {
+              loadingNode.removeAttribute('id');
+              loadingNode.innerHTML = '<span class="error-bubble">Format respons rusak.</span>';
+            }
+          } else {
+            var errMsg = 'Gagal terhubung (' + xhr.status + ')';
+            try {
+              var errData = JSON.parse(xhr.responseText);
+              if (errData.reply) errMsg = errData.reply;
             } catch (e) {}
-            box.innerHTML += '<div class="msg error"><b>System:</b> ' + escapeHtml(errorText) + '</div>';
+            loadingNode.removeAttribute('id');
+            loadingNode.innerHTML = '<span class="error-bubble">' + escapeHtml(errMsg) + '</span>';
           }
           box.scrollTop = box.scrollHeight;
         }
       };
 
-      xhr.send(JSON.stringify({ prompt: text }));
-
-      function readStream(chunk) {
-        sseBuffer += chunk.replace(/\r/g, '');
-        var end;
-        while ((end = sseBuffer.indexOf('\n\n')) !== -1) {
-          var eventText = sseBuffer.substring(0, end);
-          sseBuffer = sseBuffer.substring(end + 2);
-          var lines = eventText.split('\n');
-          var payload = '';
-          for (var i = 0; i < lines.length; i++) {
-            if (lines[i].indexOf('data:') === 0) payload += lines[i].substring(5).trim();
-          }
-          if (!payload || payload === '[DONE]') continue;
-          try {
-            var eventData = JSON.parse(payload);
-            var part = '';
-            if (eventData.candidates && eventData.candidates[0] &&
-                eventData.candidates[0].content && eventData.candidates[0].content.parts &&
-                eventData.candidates[0].content.parts[0]) {
-              part = eventData.candidates[0].content.parts[0].text || '';
-            }
-            if (part) {
-              replyText += part;
-              animateReply();
-            }
-          } catch (e) {}
-        }
-      }
-
-      // Fallback typewriter: bila proxy menggabungkan seluruh SSE menjadi satu
-      // blok, balasan tetap terasa hidup. Hanya dua karakter tiap 30 ms agar
-      // hemat CPU pada browser BlackBerry lama.
-      function animateReply() {
-        if (typingTimer) return;
-        typingTimer = window.setInterval(function() {
-          if (shownText.length < replyText.length) {
-            shownText += replyText.substr(shownText.length, 2);
-            botMessage.innerHTML = '<b>Gemini:</b> ' + renderMarkdown(shownText) + '<span class="cursor">&#9612;</span>';
-            box.scrollTop = box.scrollHeight;
-            return;
-          }
-          if (streamFinished) {
-            window.clearInterval(typingTimer);
-            typingTimer = null;
-            botMessage.innerHTML = '<b>Gemini:</b> ' + renderMarkdown(shownText || 'Tidak ada respons dari model.');
-          }
-        }, 30);
-      }
+      xhr.send(JSON.stringify({ prompt: text, apiKey: currentKey }));
     }
 
     function escapeHtml(str) {
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
     }
 
-    // Markdown kecil agar ringan untuk browser lama. Teks selalu di-escape
-    // dulu, jadi format tidak dapat menyisipkan HTML atau script.
     function renderMarkdown(str) {
       var safe = String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       safe = safe.replace(/`([^`\n]+)`/g, '<code>$1</code>');
@@ -167,30 +172,21 @@
       var html = [];
       var inList = false;
       for (var i = 0; i < lines.length; i++) {
-        var line = lines[i];
-        var heading = line.match(/^(#{1,3})\s+(.+)$/);
-        var item = line.match(/^[-*]\s+(.+)$/);
+        var item = lines[i].match(/^[-*]\s+(.+)$/);
         if (item) {
           if (!inList) { html.push('<ul>'); inList = true; }
           html.push('<li>' + item[1] + '</li>');
           continue;
         }
         if (inList) { html.push('</ul>'); inList = false; }
-        if (heading) {
-          var level = heading[1].length;
-          html.push('<h' + level + '>' + heading[2] + '</h' + level + '>');
-        } else {
-          html.push(line || '<br>');
-        }
+        html.push(lines[i] || '<br>');
       }
       if (inList) html.push('</ul>');
       return html.join('<br>');
     }
 
-    document.getElementById('input-text').addEventListener('keydown', function(e) {
-      if (e.keyCode === 13) {
-        sendMsg();
-      }
+    document.getElementById('prompt-input').addEventListener('keydown', function(e) {
+      if (e.keyCode === 13) sendMsg();
     });
   </script>
 </body>
