@@ -248,28 +248,42 @@
 
           if (xhr.status === 200) {
             try {
-              var data = JSON.parse(xhr.responseText);
-              var rawReply = data.reply;
-              loadingNode.innerHTML = renderMarkdown(rawReply);
+			  var data = JSON.parse(xhr.responseText);
+			  var rawReply = data.reply;
+			  pushHistory('model', rawReply);
 
-              // Simpan respons bot ke dalam riwayat obrolan
-              pushHistory('model', rawReply);
+			  // Efek Mesin Tik Bertahap
+			  var charIdx = 0;
+			  var speed = 20; // Kecepatan muncul teks (ms)
+			  var step = 3;   // Munculkan 3 huruf sekaligus per putaran (biar pas di BB10)
 
-              // Sisipkan tombol simpan favorit
-              var headerElem = botRow.querySelector('.bot-header');
-              var saveBtn = document.createElement('button');
-              saveBtn.className = 'btn-save-chat';
-              saveBtn.innerText = '☆ Simpan';
-              saveBtn.onclick = function() {
-                saveChatToStorage(currentPromptText, rawReply);
-                saveBtn.innerText = '★ Tersimpan';
-                saveBtn.disabled = true;
-              };
-              headerElem.appendChild(saveBtn);
+			  var typewriter = setInterval(function() {
+				charIdx += step;
+				if (charIdx < rawReply.length) {
+				  loadingNode.innerHTML = renderMarkdown(rawReply.substring(0, charIdx)) + ' &#9612;';
+				  box.scrollTop = box.scrollHeight;
+				} else {
+				  clearInterval(typewriter);
+				  loadingNode.innerHTML = renderMarkdown(rawReply);
+				  box.scrollTop = box.scrollHeight;
 
-            } catch (e) {
-              loadingNode.innerHTML = '<span class="error-bubble">Format respons rusak.</span>';
-            }
+				  // Munculkan tombol favorit setelah teks selesai terketik semua
+				  var headerElem = botRow.querySelector('.bot-header');
+				  var saveBtn = document.createElement('button');
+				  saveBtn.className = 'btn-save-chat';
+				  saveBtn.innerText = '☆ Simpan';
+				  saveBtn.onclick = function() {
+					saveChatToStorage(currentPromptText, rawReply);
+					saveBtn.innerText = '★ Tersimpan';
+					saveBtn.disabled = true;
+				  };
+				  headerElem.appendChild(saveBtn);
+				}
+			  }, speed);
+
+			} catch (e) {
+			  loadingNode.innerHTML = '<span class="error-bubble">Format respons rusak.</span>';
+			}
           } else {
             // Hapus turn user terakhir bila gagal mendapatkan balasan dari model
             if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
